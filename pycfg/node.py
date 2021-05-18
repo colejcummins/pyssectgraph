@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
-from typing import Set, List
-from json import dumps
+from typing import Set, List, Dict
+from json import dumps, JSONEncoder
 
 
 @dataclass
 class Location:
   line: int = 0
   column: int = 0
+
 
 
 @dataclass
@@ -58,5 +59,16 @@ class Node:
     return child
 
 
-  def to_json(self) -> str:
-    return dumps(self)
+  def to_json_str(self) -> str:
+    return dumps(self.__dict__, cls=NodeEncoder, indent=2)
+
+
+# Custom JSON Encoder for the Node Class
+class NodeEncoder(JSONEncoder):
+  def default(self, obj):
+    print(obj)
+    if isinstance(obj, Location):
+      return obj.__dict__
+    if isinstance(obj, Set):
+      return list(obj)
+    return JSONEncoder.default(self, obj)

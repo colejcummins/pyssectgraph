@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
+from json import dumps, JSONEncoder
 from typing import Dict
-from .node import Node
+from .node import Node, NodeEncoder
 
 @dataclass
 class CFG:
@@ -52,7 +53,7 @@ class CFG:
 
 
   def merge_nodes(self, parent: str, child: str) -> None:
-    """Merges the two nodes parent and child, attaching all grandchildren nodes to the new parent"""
+    """Merges the two nodes parent and child, attaching all grandchild nodes to the new parent"""
     self.nodes[parent].extend_contents(self.nodes[child].contents)
     self.nodes[parent].end = self.nodes[child].end
 
@@ -62,3 +63,15 @@ class CFG:
       self.nodes[grandchild_node].remove_parent(child)
 
     del self.nodes[child]
+
+
+  def to_json_str(self):
+    return dumps(self.__dict__, cls=CFGEncoder, indent=2)
+
+
+class CFGEncoder(JSONEncoder):
+  def default(self, obj):
+    print(obj)
+    if isinstance(obj, Node):
+      return NodeEncoder.default(self, obj)
+    return JSONEncoder.default(self, obj)
