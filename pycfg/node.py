@@ -5,18 +5,19 @@ from json import dumps
 
 @dataclass
 class Node:
-  predecessors: Set[str] = field(default_factory=set)
-  successors: Set[str] = field(default_factory=set)
+  name: str = ''
+  parents: Set[str] = field(default_factory=set)
+  children: Set[str] = field(default_factory=set)
   contents: List[str] = field(default_factory=list)
 
-  def add_pred(self, node_name: str) -> None:
+  def add_parent(self, node_name: str) -> None:
     """Add a node to the set of predecessors"""
-    self.predecessors.add(node_name)
+    self.parents.add(node_name)
 
 
-  def add_succ(self, node_name: str) -> None:
+  def add_child(self, node_name: str) -> None:
     """Add a node to the set of successors"""
-    self.successors.add(node_name)
+    self.children.add(node_name)
 
 
   def extend_contents(self, list: List[str]) -> None:
@@ -27,6 +28,14 @@ class Node:
   def append_contents(self, string: str) -> None:
     """Append a string to contents"""
     self.contents.append(string)
+
+
+  def next(self) -> str:
+    """Returns the name of an arbitrary child node"""
+    child = self.children.pop()
+    self.children.add(child)
+    return child
+
 
 
   def to_json(self) -> str:
