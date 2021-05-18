@@ -6,7 +6,7 @@ class CFGTest(unittest.TestCase):
   pass
 
 def main():
-  node = Node('b', {'a'}, {'c', 'd'})
+  node = Node(name='b', parents={'a'}, children={'c', 'd'})
   print(node)
 
 if __name__ == '__main__':
