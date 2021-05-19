@@ -42,9 +42,13 @@ class CFG:
     # For all child nodes of the current node, add the inserted node to the child as a parent, add the child node to
     # the inserted node as a child, then remove the children from the current node
     for child_node in self.nodes[self.cur].children:
-      self.nodes[child_node].add_parent(node.name)
-      self.nodes[node.name].add_child(child_node)
-      self.nodes[child_node].remove_parent(self.cur)
+      if child_node != node.name:
+        self.nodes[child_node].add_parent(node.name)
+        self.nodes[node.name].add_child(child_node)
+        self.nodes[child_node].remove_parent(self.cur)
+
+    self.nodes[self.cur].children.clear()
+    self.nodes[self.cur].add_child(node.name)
 
 
   def _conditional_add(self, node: Node) -> None:
@@ -62,6 +66,7 @@ class CFG:
       self.nodes[grandchild_node].add_parent(parent)
       self.nodes[grandchild_node].remove_parent(child)
 
+    self.nodes[parent].remove_child(child)
     del self.nodes[child]
 
 
@@ -71,7 +76,6 @@ class CFG:
 
 class CFGEncoder(JSONEncoder):
   def default(self, obj):
-    print(obj)
     if isinstance(obj, Node):
-      return NodeEncoder.default(self, obj)
-    return JSONEncoder.default(self, obj)
+      return obj.__dict__
+    return NodeEncoder.default(self, obj)

@@ -66,7 +66,6 @@ class Node:
 # Custom JSON Encoder for the Node Class
 class NodeEncoder(JSONEncoder):
   def default(self, obj):
-    print(obj)
     if isinstance(obj, Location):
       return obj.__dict__
     if isinstance(obj, Set):
