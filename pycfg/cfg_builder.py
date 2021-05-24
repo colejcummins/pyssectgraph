@@ -1,7 +1,7 @@
 from cfg import CFG
 from node import Node, Location
-from typing import Any, List
-from ast import NodeVisitor, AST, iter_child_nodes, stmt, expr
+from typing import Any, Iterator, List
+from ast import NodeVisitor, AST, iter_child_nodes, stmt, expr, dump
 
 
 class CFGBuilder(NodeVisitor):
@@ -30,9 +30,16 @@ class CFGBuilder(NodeVisitor):
 
     self.cfg.attach_child(cfg_node)
     self.cfg.go_to(cfg_node.name)
+    self.cfg.get_cur().append_contents(node.test)
 
-    for child in iter_child_nodes(node):
-      self.visit(child)
+    if node.body:
+      children = iter(node.body)
+      body_node = self.build_node(children.__next__())
+      self.cfg.attach_child(body_node)
+      self.cfg.go_to(body_node.name)
+
+      for child in children:
+        self.visit(child)
 
 
   def generic_visit(self, node: AST) -> Any:
@@ -40,10 +47,10 @@ class CFGBuilder(NodeVisitor):
     return super().generic_visit(node)
 
 
-  def build_node(self, node: AST) -> Node:
+  def build_node(self, node: AST, name: str = '') -> Node:
     return Node(
-      name=f"{node.__class__.__name__}_{node.lineno}_{node.col_offset}",
-      start=Location(node.lineno, node.col_offset),
-      end=Location(node.end_lineno, node.end_col_offset),
+      name=name or f"{node.__class__.__name__}_{node.lineno}_{node.col_offset}",
+      start=Location.default_start(node),
+      end=Location.default_end(node),
       contents=[node]
     )

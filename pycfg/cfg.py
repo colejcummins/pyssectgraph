@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
-from ast import AST
+from ast import AST, unparse, dump
 from json import dumps, JSONEncoder
 from typing import Dict, Tuple
 from node import Node, NodeEncoder, Location
+import astor
 
 @dataclass
 class CFG:
@@ -85,4 +86,7 @@ class CFGEncoder(JSONEncoder):
   def default(self, obj):
     if isinstance(obj, Node):
       return obj.__dict__
+
+    if isinstance(obj, AST):
+      return astor.(obj)
     return NodeEncoder.default(self, obj)

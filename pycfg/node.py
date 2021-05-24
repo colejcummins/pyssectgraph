@@ -1,13 +1,22 @@
 from dataclasses import dataclass, field
 from typing import Set, List, Dict
 from json import dumps, JSONEncoder
-from ast import stmt, expr
+from ast import stmt, expr, AST
 
 
 @dataclass
 class Location:
   line: int = 0
   column: int = 0
+
+  @staticmethod
+  def default_start(node: AST):
+    return Location(getattr(node, 'lineno', 0), getattr(node, 'col_offset', 0))
+
+
+  @staticmethod
+  def default_end(node: AST):
+    return Location(getattr(node, 'end_lineno', 0), getattr(node, 'end_col_offset', 0))
 
 
 @dataclass
@@ -50,6 +59,7 @@ class Node:
   def append_contents(self, contents: stmt | expr) -> None:
     """Append a string to contents"""
     self.contents.append(contents)
+    self.end = Location.default_end(contents)
 
 
   def next(self) -> str:
