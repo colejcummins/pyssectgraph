@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Set, List, Dict
 from json import dumps, JSONEncoder
+from ast import stmt, expr
 
 
 @dataclass
 class Location:
   line: int = 0
   column: int = 0
-
 
 
 @dataclass
@@ -17,7 +17,7 @@ class Node:
   end: Location = field(default_factory=Location)
   parents: Set[str] = field(default_factory=set)
   children: Set[str] = field(default_factory=set)
-  contents: List[str] = field(default_factory=list)
+  contents: List[stmt | expr] = field(default_factory=list)
 
 
   def add_parent(self, node_name: str) -> None:
@@ -42,14 +42,14 @@ class Node:
       self.parents.remove(node_name)
 
 
-  def extend_contents(self, list: List[str]) -> None:
+  def extend_contents(self, list: List[stmt | expr]) -> None:
     """Extend contents with a list of strings"""
     self.contents.extend(list)
 
 
-  def append_contents(self, string: str) -> None:
+  def append_contents(self, contents: stmt | expr) -> None:
     """Append a string to contents"""
-    self.contents.append(string)
+    self.contents.append(contents)
 
 
   def next(self) -> str:
@@ -60,6 +60,7 @@ class Node:
 
 
   def to_json_str(self) -> str:
+    """Returns a json representation of the current Node"""
     return dumps(self.__dict__, cls=NodeEncoder, indent=2)
 
 

@@ -1,13 +1,15 @@
 from dataclasses import dataclass, field
+from ast import AST
 from json import dumps, JSONEncoder
-from typing import Dict
-from .node import Node, NodeEncoder
+from typing import Dict, Tuple
+from node import Node, NodeEncoder, Location
 
 @dataclass
 class CFG:
-  root: str
-  cur: str
-  nodes: Dict[str, Node]
+  name: str
+  root: str = 'root'
+  cur: str = 'root'
+  nodes: Dict[str, Node] = field(default_factory=dict)
 
 
   def next(self) -> None:
@@ -70,7 +72,12 @@ class CFG:
     del self.nodes[child]
 
 
-  def to_json_str(self):
+  def get_cur(self) -> Node:
+    return self.nodes[self.cur]
+
+
+  def to_json_str(self) -> str:
+    """Returns a json string representation of the cfg"""
     return dumps(self.__dict__, cls=CFGEncoder, indent=2)
 
 
