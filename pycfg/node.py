@@ -2,6 +2,13 @@ from dataclasses import dataclass, field
 from typing import Set, List, Dict
 from json import dumps, JSONEncoder
 from ast import stmt, expr, AST
+from enum import Enum
+
+class Event(Enum):
+  ONFALSE = "False"
+  ONTRUE = "True"
+  ONCALL = "calls"
+  CONTINUE = ""
 
 
 @dataclass
@@ -24,19 +31,19 @@ class Node:
   name: str = ''
   start: Location = field(default_factory=Location)
   end: Location = field(default_factory=Location)
-  parents: Set[str] = field(default_factory=set)
-  children: Set[str] = field(default_factory=set)
+  parents: Dict[str, Event] = field(default_factory=dict)
+  children: Dict[str, Event] = field(default_factory=dict)
   contents: List[stmt | expr] = field(default_factory=list)
 
 
-  def add_parent(self, node_name: str) -> None:
+  def add_parent(self, node_name: str, event: Event) -> None:
     """Add a node to the set of parents"""
-    self.parents.add(node_name)
+    self.parents[node_name] = event
 
 
-  def add_child(self, node_name: str) -> None:
+  def add_child(self, node_name: str, event: Event) -> None:
     """Add a node to the set of children"""
-    self.children.add(node_name)
+    self.children[node_name] = event
 
 
   def remove_child(self, node_name: str) -> None:
@@ -81,4 +88,6 @@ class NodeEncoder(JSONEncoder):
       return obj.__dict__
     if isinstance(obj, Set):
       return list(obj)
+    if isinstance(obj, Event):
+      return obj.value
     return JSONEncoder.default(self, obj)

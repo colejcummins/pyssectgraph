@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from ast import AST, unparse, dump
-from json import dumps, JSONEncoder
 from typing import Dict, Tuple
-from node import Node, NodeEncoder, Location
+from node import Node, NodeEncoder, Location, Event
+import ast
 import astor
+import json
 
 @dataclass
 class CFG:
@@ -20,38 +20,39 @@ class CFG:
 
   def go_to(self, name: str) -> None:
     """Sets the current node to node name"""
-    self.cur = name
+    if name in self.nodes:
+      self.cur = name
 
 
-  def attach_child(self, node: Node) -> None:
+  def attach_child(self, node: Node, event: Event = Event.CONTINUE) -> None:
     """Add a child node to the current node"""
     self._conditional_add(node)
-    self.nodes[self.cur].add_child(node.name)
-    self.nodes[node.name].add_parent(self.cur)
+    self.nodes[self.cur].add_child(node.name, event)
+    self.nodes[node.name].add_parent(self.cur, event)
 
 
-  def attach_parent(self, node: Node) -> None:
+  def attach_parent(self, node: Node, event: Event = Event.CONTINUE) -> None:
     """Add a parent node to the current node"""
     self._conditional_add(node)
-    self.nodes[self.cur].add_parent(node.name)
-    self.nodes[node.name].add_child(self.cur)
+    self.nodes[self.cur].add_parent(node.name, event)
+    self.nodes[node.name].add_child(self.cur, event)
 
 
-  def insert_child(self, node: Node) -> None:
+  def insert_child(self, node: Node, event: Event = Event.CONTINUE) -> None:
     """Inserts a child node to the current node, replacing node connections from the children to the new parent"""
     self._conditional_add(node)
     self.attach_child(node)
 
     # For all child nodes of the current node, add the inserted node to the child as a parent, add the child node to
     # the inserted node as a child, then remove the children from the current node
-    for child_node in self.nodes[self.cur].children:
-      if child_node != node.name:
-        self.nodes[child_node].add_parent(node.name)
-        self.nodes[node.name].add_child(child_node)
-        self.nodes[child_node].remove_parent(self.cur)
+    for child_name in self.nodes[self.cur].children.keys():
+      if child_name != node.name:
+        self.nodes[child_name].add_parent(node.name, event)
+        self.nodes[node.name].add_child(child_name, event)
+        self.nodes[child_name].remove_parent(self.cur)
 
     self.nodes[self.cur].children.clear()
-    self.nodes[self.cur].add_child(node.name)
+    self.nodes[self.cur].add_child(node.name, Event.CONTINUE)
 
 
   def _conditional_add(self, node: Node) -> None:
@@ -79,14 +80,22 @@ class CFG:
 
   def to_json_str(self) -> str:
     """Returns a json string representation of the cfg"""
-    return dumps(self.__dict__, cls=CFGEncoder, indent=2)
+    return json.dumps(self.__dict__, cls=CFGEncoder, indent=2)
 
 
-class CFGEncoder(JSONEncoder):
+class CFGEncoder(json.JSONEncoder):
   def default(self, obj):
     if isinstance(obj, Node):
       return obj.__dict__
 
-    if isinstance(obj, AST):
-      return astor.(obj)
+    if isinstance(obj, ast.AST):
+      return self._ast_no_recurse(obj)
     return NodeEncoder.default(self, obj)
+
+
+  def _ast_no_recurse(self, node: ast.AST) -> str:
+    if type(node) in [ast.While, ast.If]:
+      return ast.unparse(node.__class__(node.test, [], []))
+    if isinstance(node, ast.For):
+      return ast.unparse(ast.For(node.target, node.iter, [], []))
+    return ast.unparse(node)

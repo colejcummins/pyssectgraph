@@ -10,8 +10,13 @@ x += 2
 """
 
 SIMPLE_IF="""
+x += 1
 if x < 4:
-  x += 1
+  return 0
+else:
+  x = 1
+x += 5
+x += 6
 """
 
 
