@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, Tuple
-from node import Node, NodeEncoder, Location, Event
+from .node import Node, NodeEncoder, Location, Event
 import ast
 import astor
 import json

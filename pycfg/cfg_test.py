@@ -29,6 +29,6 @@ def fib(n):
 def main():
   builder = CFGBuilder()
 
-  print(builder.build(parse(SIMPLE_IF, mode='exec')).to_json_str())
+  print(builder.build(parse(SIMPLE_IF, mode='exec')).to_debug_json())
 if __name__ == '__main__':
   main()

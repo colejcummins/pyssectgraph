@@ -8,6 +8,7 @@ class Event(Enum):
   ONFALSE = "False"
   ONTRUE = "True"
   ONCALL = "calls"
+  ONBREAK = "break"
   CONTINUE = ""
 
 
