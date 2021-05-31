@@ -24,21 +24,21 @@ class CFG:
       self.cur = name
 
 
-  def attach_child(self, node: Node, event: Event = Event.CONTINUE) -> None:
+  def attach_child(self, node: Node, event: Event = Event.PASS) -> None:
     """Add a child node to the current node"""
     self._conditional_add(node)
     self.nodes[self.cur].add_child(node.name, event)
     self.nodes[node.name].add_parent(self.cur, event)
 
 
-  def attach_parent(self, node: Node, event: Event = Event.CONTINUE) -> None:
+  def attach_parent(self, node: Node, event: Event = Event.PASS) -> None:
     """Add a parent node to the current node"""
     self._conditional_add(node)
     self.nodes[self.cur].add_parent(node.name, event)
     self.nodes[node.name].add_child(self.cur, event)
 
 
-  def insert_child(self, node: Node, event: Event = Event.CONTINUE) -> None:
+  def insert_child(self, node: Node, event: Event = Event.PASS) -> None:
     """Inserts a child node to the current node, replacing node connections from the children to the new parent"""
     self._conditional_add(node)
     self.attach_child(node)
@@ -52,7 +52,7 @@ class CFG:
         self.nodes[child_name].remove_parent(self.cur)
 
     self.nodes[self.cur].children.clear()
-    self.nodes[self.cur].add_child(node.name, Event.CONTINUE)
+    self.nodes[self.cur].add_child(node.name, Event.PASS)
 
 
   def _conditional_add(self, node: Node) -> None:

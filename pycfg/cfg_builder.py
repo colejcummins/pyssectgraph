@@ -14,7 +14,7 @@ class CFGBuilder(ast.NodeVisitor):
 
 
   def __init__(self):
-    self.cur_event = Event.CONTINUE
+    self.cur_event = Event.PASS
     self.interrupting = False
     self.visited_nodes = {}
     self.loop_headers = []
@@ -24,7 +24,7 @@ class CFGBuilder(ast.NodeVisitor):
 
   def build(self, node: ast.AST) -> CFG:
     self.cfg = CFG('test', 'root', 'root', {'root': Node('root')})
-    self.cur_event = Event.CONTINUE
+    self.cur_event = Event.PASS
     self.interrupting = False
     self.visited_nodes = {}
     self.loop_headers = []
@@ -35,16 +35,17 @@ class CFGBuilder(ast.NodeVisitor):
 
   def _visit_block(self, nodes: List[ast.stmt | ast.expr]) -> None:
     for node in nodes:
-      if not self.interrupting:
-        self.visit(node)
+      if self.interrupting:
+        break
+      self.visit(node)
 
 
   def generic_visit(self, node: ast.AST) -> Any:
-    if self.cur_event != Event.CONTINUE:
+    if self.cur_event != Event.PASS:
       cfg_node = self._build_node(node)
       self.cfg.attach_child(cfg_node, self.cur_event)
       self.cfg.go_to(cfg_node.name)
-      self.cur_event = Event.CONTINUE
+      self.cur_event = Event.PASS
     else:
       self.cfg.get_cur().append_contents(node)
 
@@ -53,8 +54,10 @@ class CFGBuilder(ast.NodeVisitor):
     cfg_node = self._build_node(node)
     exit_node = self._build_empty_node(f"exit_{cfg_node.name}", Location.default_end(node))
     self.loop_headers.append(cfg_node)
-    self.loop_exits.append(cfg_node)
+    self.loop_exits.append(exit_node)
     self.cfg.attach_child(cfg_node, self.cur_event)
+    self.cfg.go_to(cfg_node.name)
+
 
     if node.body:
       self.cur_event = Event.ONTRUE
@@ -108,11 +111,11 @@ class CFGBuilder(ast.NodeVisitor):
   def visit_Continue(self, node: ast.Continue) -> Any:
     self.cfg.attach_child(cfg_node := self._build_node(node))
     self.cfg.go_to(cfg_node.name)
-    self.cfg.attach_child(self.loop_headers[-1])
+    self.cfg.attach_child(self.loop_headers[-1], Event.ONCONTINUE)
     self.interrupting = True
 
 
-  def _visit_body(self, body: List[ast.stmt | ast.expr], event: Event = Event.CONTINUE):
+  def _visit_body(self, body: List[ast.stmt | ast.expr], event: Event = Event.PASS):
     children = iter(body)
     body_node = self._build_node(children.__next__())
     self.cfg.attach_child(body_node, event)

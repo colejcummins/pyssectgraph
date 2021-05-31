@@ -9,7 +9,8 @@ class Event(Enum):
   ONTRUE = "True"
   ONCALL = "calls"
   ONBREAK = "break"
-  CONTINUE = ""
+  ONCONTINUE = "continue"
+  PASS = ""
 
 
 @dataclass

@@ -30,7 +30,11 @@ class CFGBuilderTests(unittest.TestCase):
 
 
   def test_basic_while(self):
-    self.assertEqual("", json.dumps(self._simplify_json(self._prog_to_json(BASIC_WHILE))))
+    self.assertEqual(BASIC_WHILE_JSON, self._simplify_json(self._prog_to_json(BASIC_WHILE)))
+
+
+  def test_while_break_continue(self):
+    self.assertEqual(WHILE_BREAK_CONTINUE_JSON, self._simplify_json(self._prog_to_json(WHILE_BREAK_CONTINUE)))
 
 
   def _prog_to_json(self, prog: str) -> Dict[str, Any]:
@@ -236,7 +240,172 @@ while x < 5:
   x += 1
 x = 2
 """
+BASIC_WHILE_JSON = {
+  "root": {
+    "contents": [
+      "x = 1"
+    ],
+    "children": {
+      "While_3_0": ""
+    },
+    "parents": {}
+  },
+  "While_3_0": {
+    "contents": [
+      "while x < 5:"
+    ],
+    "children": {
+      "AugAssign_4_2": "True",
+      "exit_While_3_0": ""
+    },
+    "parents": {
+      "root": "",
+      "AugAssign_4_2": ""
+    }
+  },
+  "AugAssign_4_2": {
+    "contents": [
+      "x += 1"
+    ],
+    "children": {
+      "While_3_0": ""
+    },
+    "parents": {
+      "While_3_0": "True"
+    }
+  },
+  "exit_While_3_0": {
+    "contents": [
+      "x = 2"
+    ],
+    "children": {},
+    "parents": {
+      "While_3_0": ""
+    }
+  }
+}
 
 
+
+WHILE_BREAK_CONTINUE ="""
+while x < 10:
+  if x == 5:
+    continue
+  if x == 1:
+    x += 2
+    break
+  x += 1
+x += 2
+"""
+WHILE_BREAK_CONTINUE_JSON = {
+  "root": {
+    "contents": [],
+    "children": {
+      "While_2_0": ""
+    },
+    "parents": {}
+  },
+  "While_2_0": {
+    "contents": [
+      "while x < 10:"
+    ],
+    "children": {
+      "If_3_2": "True",
+      "exit_While_2_0": ""
+    },
+    "parents": {
+      "root": "",
+      "Continue_4_4": "continue",
+      "exit_If_5_2": ""
+    }
+  },
+  "If_3_2": {
+    "contents": [
+      "if x == 5:"
+    ],
+    "children": {
+      "Continue_4_4": "",
+      "exit_If_3_2": ""
+    },
+    "parents": {
+      "While_2_0": "True"
+    }
+  },
+  "Continue_4_4": {
+    "contents": [
+      "continue"
+    ],
+    "children": {
+      "While_2_0": "continue"
+    },
+    "parents": {
+      "If_3_2": ""
+    }
+  },
+  "exit_If_3_2": {
+    "contents": [],
+    "children": {
+      "If_5_2": "True"
+    },
+    "parents": {
+      "If_3_2": ""
+    }
+  },
+  "If_5_2": {
+    "contents": [
+      "if x == 1:"
+    ],
+    "children": {
+      "AugAssign_6_4": "True",
+      "exit_If_5_2": ""
+    },
+    "parents": {
+      "exit_If_3_2": "True"
+    }
+  },
+  "AugAssign_6_4": {
+    "contents": [
+      "x += 2"
+    ],
+    "children": {
+      "Break_7_4": ""
+    },
+    "parents": {
+      "If_5_2": "True"
+    }
+  },
+  "Break_7_4": {
+    "contents": [
+      "break"
+    ],
+    "children": {
+      "exit_While_2_0": "break"
+    },
+    "parents": {
+      "AugAssign_6_4": ""
+    }
+  },
+  "exit_While_2_0": {
+    "contents": [
+      "x += 2"
+    ],
+    "children": {},
+    "parents": {
+      "Break_7_4": "break",
+      "While_2_0": ""
+    }
+  },
+  "exit_If_5_2": {
+    "contents": [
+      "x += 1"
+    ],
+    "children": {
+      "While_2_0": ""
+    },
+    "parents": {
+      "If_5_2": ""
+    }
+  }
+}
 if __name__ == '__main__':
   unittest.main()
