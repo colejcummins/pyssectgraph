@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Dict, Tuple, Set
-from .node import Node, NodeEncoder, Location, Event, NodeDecoder
+from typing import Dict, Set
+from .node import Node, NodeEncoder, Event, NodeDecoder
 import ast
-import astor
 import json
 
 @dataclass
