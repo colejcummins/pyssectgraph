@@ -14,23 +14,23 @@ class CFGBuilder(ast.NodeVisitor):
 
 
   def __init__(self):
-    self.cur_event = Event.PASS
-    self.interrupting = False
-    self.visited_nodes = {}
-    self.loop_headers = []
-    self.loop_exits = []
+    self._init_instances()
     super().__init__()
 
 
   def build(self, node: ast.AST) -> CFG:
     self.cfg = CFG('test', 'root', 'root', {'root': Node('root')})
+    self._init_instances()
+    self._visit_block(node.body)
+    return self.cfg
+
+
+  def _init_instances(self):
     self.cur_event = Event.PASS
     self.interrupting = False
     self.visited_nodes = {}
     self.loop_headers = []
     self.loop_exits = []
-    self._visit_block(node.body)
-    return self.cfg
 
 
   def _visit_block(self, nodes: List[ast.stmt | ast.expr]) -> None:
@@ -51,6 +51,14 @@ class CFGBuilder(ast.NodeVisitor):
 
 
   def visit_While(self, node: ast.While) -> Any:
+    self._visit_loop(node)
+
+
+  def visit_For(self, node: ast.For) -> Any:
+    self._visit_loop(node)
+
+
+  def _visit_loop(self, node: ast.For | ast.While) -> Any:
     cfg_node = self._build_node(node)
     exit_node = self._build_empty_node(f"exit_{cfg_node.name}", Location.default_end(node))
     self.loop_headers.append(cfg_node)
@@ -58,12 +66,8 @@ class CFGBuilder(ast.NodeVisitor):
     self.cfg.attach_child(cfg_node, self.cur_event)
     self.cfg.go_to(cfg_node.name)
 
-
     if node.body:
-      self.cur_event = Event.ONTRUE
-      self._visit_block(node.body)
-      self._add_exit(cfg_node)
-      self.cfg.go_to(cfg_node.name)
+      self._visit_body(node, cfg_node, cfg_node.name)
 
     if node.orelse:
       self.cur_event = Event.ONFALSE
@@ -83,10 +87,7 @@ class CFGBuilder(ast.NodeVisitor):
     self.cfg.go_to(cfg_node.name)
 
     if node.body:
-      self.cur_event = Event.ONTRUE
-      self._visit_block(node.body)
-      self._add_exit(exit_node)
-      self.cfg.go_to(cfg_node.name)
+      self._visit_body(node, exit_node, cfg_node.name)
 
     if node.orelse:
       self.cur_event = Event.ONFALSE
@@ -97,6 +98,19 @@ class CFGBuilder(ast.NodeVisitor):
 
 
   def visit_Return(self, node: ast.Return) -> Any:
+    self._visit_interrupts(node)
+
+
+  def visit_Yield(self, node: ast.Yield) -> Any:
+    self._visit_interrupts(node)
+
+
+  def visit_YieldFrom(self, node: ast.YieldFrom) -> Any:
+    # TODO
+    self._visit_interrupts(node)
+
+
+  def _visit_interrupts(self, node: ast.AST) -> Any:
     self.cfg.attach_child(self._build_node(node))
     self.interrupting = True
 
@@ -115,14 +129,11 @@ class CFGBuilder(ast.NodeVisitor):
     self.interrupting = True
 
 
-  def _visit_body(self, body: List[ast.stmt | ast.expr], event: Event = Event.PASS):
-    children = iter(body)
-    body_node = self._build_node(children.__next__())
-    self.cfg.attach_child(body_node, event)
-    self.cfg.go_to(body_node.name)
-
-    for child in children:
-      self.visit(child)
+  def _visit_body(self, node: ast.AST, exit: Node, parent_name: str):
+    self.cur_event = Event.ONTRUE
+    self._visit_block(node.body)
+    self._add_exit(exit)
+    self.cfg.go_to(parent_name)
 
 
   def _add_exit(self, exit_node: Node):

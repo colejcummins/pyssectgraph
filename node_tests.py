@@ -4,6 +4,7 @@ import unittest
 
 
 JSON_CFG_OUT = """{
+  "name": "test",
   "root": "a",
   "cur": "a",
   "nodes": {
@@ -17,10 +18,10 @@ JSON_CFG_OUT = """{
         "line": 0,
         "column": 0
       },
-      "parents": [],
-      "children": [
-        "b"
-      ],
+      "parents": {},
+      "children": {
+        "b": ""
+      },
       "contents": []
     },
     "b": {
@@ -33,10 +34,10 @@ JSON_CFG_OUT = """{
         "line": 0,
         "column": 0
       },
-      "parents": [
-        "a"
-      ],
-      "children": [],
+      "parents": {
+        "a": ""
+      },
+      "children": {},
       "contents": []
     }
   }
@@ -99,7 +100,7 @@ class CFGTest(unittest.TestCase):
 
 
   def test_to_json_str(self):
-    cfg = CFG('a', 'a', {
+    cfg = CFG('test', 'a', 'a', {
         'a': Node(name='a', children={'b'}),
         'b': Node(name='b', parents={'a'})
       })

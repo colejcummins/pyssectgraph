@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
-from .node import Node, NodeEncoder, Location, Event
+from typing import Dict, Tuple, Set
+from .node import Node, NodeEncoder, Location, Event, NodeDecoder
 import ast
 import astor
 import json
@@ -10,6 +10,7 @@ class CFG:
   name: str
   root: str = 'root'
   cur: str = 'root'
+  visited: Set[str] = field(default_factory=set)
   nodes: Dict[str, Node] = field(default_factory=dict)
 
 
@@ -83,6 +84,31 @@ class CFG:
     return json.dumps(self.__dict__, cls=CFGEncoder, indent=2)
 
 
+  def iter_child_nodes(self):
+    """Iterates through all child nodes of the current node"""
+    for name, _ in self.nodes[self.cur].children.items():
+      yield self.nodes[name]
+
+
+  def walk(self):
+    """Walks along a control flow graph starting with the current node, yielding all child nodes, in BFS order"""
+    from collections import deque
+    nodes = deque([self.nodes[self.cur]])
+    visited = set()
+    while nodes:
+      node = nodes.popleft()
+      if node.name not in visited:
+        self.go_to(node.name)
+        visited.add(node.name)
+        nodes.extend(self.iter_child_nodes())
+        yield node
+
+
+def build_from_json(str) -> CFG:
+  """Takes in a JSON string and returns a corresponding Control Flow Graph"""
+  return json.loads(str, cls=CFGDecoder)
+
+
 class CFGEncoder(json.JSONEncoder):
   def default(self, obj):
     if isinstance(obj, Node):
@@ -99,3 +125,14 @@ class CFGEncoder(json.JSONEncoder):
     if isinstance(node, ast.For):
       return ast.unparse(ast.For(node.target, node.iter, [], []))
     return ast.unparse(node)
+
+
+class CFGDecoder(json.JSONDecoder):
+  def __init__(self, *args, **kwargs):
+    json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+
+
+  def object_hook(self, obj):
+    if 'name' in obj and 'cur' in obj and 'root' in obj:
+      return CFG(**obj)
+    return NodeDecoder.object_hook(self, obj)

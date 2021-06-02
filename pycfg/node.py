@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Set, List, Dict
-from json import dumps, JSONEncoder
+from json import dumps, JSONEncoder, JSONDecoder, loads
 from ast import stmt, expr, AST
 from enum import Enum
 
@@ -83,6 +83,11 @@ class Node:
     return dumps(self.__dict__, cls=NodeEncoder, indent=2)
 
 
+
+def build_from_json(str) -> Node:
+  return loads(str, cls=NodeDecoder)
+
+
 # Custom JSON Encoder for the Node Class
 class NodeEncoder(JSONEncoder):
   def default(self, obj):
@@ -93,3 +98,17 @@ class NodeEncoder(JSONEncoder):
     if isinstance(obj, Event):
       return obj.value
     return JSONEncoder.default(self, obj)
+
+
+# Custom JSON Decoder for the Node Class
+class NodeDecoder(JSONDecoder):
+  def __init__(self, *args, **kwargs):
+    JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+
+
+  def object_hook(self, obj):
+    if 'line' in obj and 'column' in obj:
+      return Location(obj['line'], obj['column'])
+    if 'parents' in obj and 'children' in obj:
+      return Node(**obj)
+    return obj
