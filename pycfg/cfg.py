@@ -85,12 +85,13 @@ class CFG:
 
   def iter_child_nodes(self):
     """Iterates through all child nodes of the current node"""
-    for name, _ in self.nodes[self.cur].children.items():
+    for name in self.nodes[self.cur].children.keys():
       yield self.nodes[name]
 
 
   def walk(self):
-    """Walks along a control flow graph starting with the current node, yielding all child nodes, in BFS order"""
+    """Walks along a control flow graph starting with the current node, yielding all child nodes,
+    in breadth first order"""
     from collections import deque
     nodes = deque([self.nodes[self.cur]])
     visited = set()
@@ -103,12 +104,13 @@ class CFG:
         yield node
 
 
-def build_from_json(str) -> CFG:
+def build_cfg_from_json(str) -> CFG:
   """Takes in a JSON string and returns a corresponding Control Flow Graph"""
   return json.loads(str, cls=CFGDecoder)
 
 
 class CFGEncoder(json.JSONEncoder):
+  """Custom JSON Encoder for the CFG Class"""
   def default(self, obj):
     if isinstance(obj, Node):
       return obj.__dict__
@@ -119,7 +121,18 @@ class CFGEncoder(json.JSONEncoder):
 
 
   def _ast_no_recurse(self, node: ast.AST) -> str:
-    if type(node) in [ast.While, ast.If]:
+    """Turns an AST node with nested nodes into a flattened node for string representation.
+
+    For example,
+    ```
+    if x < 5:
+      x += 1
+    ```
+
+    Becomes just
+    `if x < 5:`
+    """
+    if type(node) in [ast.While, ast.If, ast.IfExp]:
       return ast.unparse(node.__class__(node.test, [], []))
     if isinstance(node, ast.For):
       return ast.unparse(ast.For(node.target, node.iter, [], []))
@@ -127,6 +140,7 @@ class CFGEncoder(json.JSONEncoder):
 
 
 class CFGDecoder(json.JSONDecoder):
+  """Custom JSON Decoder for the CFG Class"""
   def __init__(self, *args, **kwargs):
     json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
 

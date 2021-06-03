@@ -1,6 +1,4 @@
-from pycfg.node import Node
-from pycfg.cfg import CFG
-from pycfg.cfg_builder import CFGBuilder
+from pycfg.cfg_builder import builds
 from typing import Dict, Any
 import json
 import ast
@@ -38,7 +36,7 @@ class CFGBuilderTests(unittest.TestCase):
 
 
   def _prog_to_json(self, prog: str) -> Dict[str, Any]:
-    return json.loads(CFGBuilder().build(ast.parse(prog, mode='exec')).to_json_str())
+    return json.loads(builds(prog).to_json_str())
 
 
   def _simplify_json(self, json_inp):

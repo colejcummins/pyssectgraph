@@ -1,20 +1,27 @@
 from dataclasses import dataclass, field
-from typing import Set, List, Dict
+from typing import Set, List, Dict, Any
 from json import dumps, JSONEncoder, JSONDecoder, loads
-from ast import stmt, expr, AST
+from ast import AST
 from enum import Enum
 
 class Event(Enum):
+  """Enum used to describe CFG node transitions"""
   ONFALSE = "False"
   ONTRUE = "True"
   ONCALL = "calls"
   ONBREAK = "break"
   ONCONTINUE = "continue"
+  ONYIELD = "yield"
+  ONRETURN = "return"
   PASS = ""
 
 
 @dataclass
 class Location:
+  """A class that describes a single location in a file, with line and column fields.
+  As described by the python AST class, `line` is one indexed whereas `column` is
+  zero indexed
+  """
   line: int = 0
   column: int = 0
 
@@ -30,12 +37,21 @@ class Location:
 
 @dataclass
 class Node:
+  """Represents a single Node in a Control Flow Graph, with a name, a `Location` start and end
+  a dictionary of parent and child nodes and a list of contents.
+
+  Nodes follow a naming convention of `<AST class>_<start line>_<start column>`, for example
+  `'If_5_2'`.
+
+  Nodes are json serializable and can be decoded from json, with the methods `to_json_str` and
+  `build_node_from_json` respsectively.
+  """
   name: str = ''
   start: Location = field(default_factory=Location)
   end: Location = field(default_factory=Location)
   parents: Dict[str, Event] = field(default_factory=dict)
   children: Dict[str, Event] = field(default_factory=dict)
-  contents: List[stmt | expr] = field(default_factory=list)
+  contents: List[Any] = field(default_factory=list)
 
 
   def add_parent(self, node_name: str, event: Event) -> None:
@@ -60,12 +76,12 @@ class Node:
       self.parents.remove(node_name)
 
 
-  def extend_contents(self, list: List[stmt | expr]) -> None:
+  def extend_contents(self, list: List[Any]) -> None:
     """Extend contents with a list of strings"""
     self.contents.extend(list)
 
 
-  def append_contents(self, contents: stmt | expr) -> None:
+  def append_contents(self, contents: Any) -> None:
     """Append a string to contents"""
     self.contents.append(contents)
     self.end = Location.default_end(contents)
@@ -84,12 +100,12 @@ class Node:
 
 
 
-def build_from_json(str) -> Node:
+def build_node_from_json(str) -> Node:
   return loads(str, cls=NodeDecoder)
 
 
-# Custom JSON Encoder for the Node Class
 class NodeEncoder(JSONEncoder):
+  """Custom JSON Encoder for the Node Class"""
   def default(self, obj):
     if isinstance(obj, Location):
       return obj.__dict__
@@ -100,8 +116,8 @@ class NodeEncoder(JSONEncoder):
     return JSONEncoder.default(self, obj)
 
 
-# Custom JSON Decoder for the Node Class
 class NodeDecoder(JSONDecoder):
+  """Custom JSON Decoder for the Node Class"""
   def __init__(self, *args, **kwargs):
     JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
 

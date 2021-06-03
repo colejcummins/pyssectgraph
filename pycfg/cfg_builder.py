@@ -10,7 +10,6 @@ class CFGBuilder(ast.NodeVisitor):
   interrupting: bool
   loop_headers: List[Node]
   loop_exits: List[Node]
-  visited_nodes: Set[str]
 
 
   def __init__(self):
@@ -21,14 +20,16 @@ class CFGBuilder(ast.NodeVisitor):
   def build(self, node: ast.AST) -> CFG:
     self.cfg = CFG('test', 'root', 'root', {'root': Node('root')})
     self._init_instances()
-    self._visit_block(node.body)
+    if hasattr(node, 'body'):
+      self._visit_block(node.body)
+    else:
+      self.visit(node)
     return self.cfg
 
 
   def _init_instances(self):
     self.cur_event = Event.PASS
     self.interrupting = False
-    self.visited_nodes = {}
     self.loop_headers = []
     self.loop_exits = []
 
@@ -154,3 +155,8 @@ class CFGBuilder(ast.NodeVisitor):
 
   def _build_empty_node(self,  name: str, location: Location) -> Node:
     return Node(name=name, start=location, end=location)
+
+
+def builds(source: str) -> CFG:
+  """Takes a python source string and returns the corresponding CFG"""
+  return CFGBuilder().build(ast.parse(source))

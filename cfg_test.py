@@ -2,9 +2,7 @@ import ast
 import sys
 import dis
 import pdb
-from pycfg.cfg_builder import CFGBuilder
-from pycfg.node import Node
-from pycfg.cfg import CFG, build_from_json
+from pycfg import build_cfg_from_json
 
 PROGRAM = """
 x = 4
@@ -211,7 +209,7 @@ def fib(n):
 
 
 def main():
-  cfg = build_from_json(WALKING_CFG)
+  cfg = build_cfg_from_json(WALKING_CFG)
 
   for node in cfg.walk():
     print(node)
