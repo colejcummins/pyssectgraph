@@ -90,7 +90,7 @@ class CFG:
 
 
   def walk(self):
-    """Walks along a control flow graph starting with the current node, yielding all child nodes,
+    """Walks along a control flow graph starting with the current node, yielding all descendant nodes,
     in breadth first order"""
     from collections import deque
     nodes = deque([self.nodes[self.cur]])
