@@ -3,6 +3,7 @@ from typing import Set, List, Dict, Any
 from json import dumps, JSONEncoder, JSONDecoder, loads
 from ast import AST
 from enum import Enum
+from dis import Instruction
 
 class Event(Enum):
   """Enum used to describe CFG node transitions"""
@@ -27,12 +28,12 @@ class Location:
 
   @staticmethod
   def default_start(node: AST):
-    return Location(getattr(node, 'lineno', 0), getattr(node, 'col_offset', 0))
+    return Location(getattr(node, 'lineno', 1), getattr(node, 'col_offset', 0))
 
 
   @staticmethod
   def default_end(node: AST):
-    return Location(getattr(node, 'end_lineno', 0), getattr(node, 'end_col_offset', 0))
+    return Location(getattr(node, 'end_lineno', 1), getattr(node, 'end_col_offset', 0))
 
 
 @dataclass
@@ -84,7 +85,10 @@ class Node:
   def append_contents(self, contents: Any) -> None:
     """Append a string to contents"""
     self.contents.append(contents)
-    self.end = Location.default_end(contents)
+    if isinstance(contents, AST):
+      self.end = Location.default_end(contents)
+    elif isinstance(contents, Instruction):
+      self.end = contents.starts_line or 0
 
 
   def next(self) -> str:

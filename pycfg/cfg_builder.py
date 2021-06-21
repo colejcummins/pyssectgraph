@@ -1,10 +1,13 @@
+from types import CodeType
 from .cfg import CFG
 from .node import Node, Location, Event
-from typing import Any, List, Set
+from typing import Any, Iterator, List, Set
+import dis
 import ast
 
 
-class CFGBuilder(ast.NodeVisitor):
+class ASTtoCFG(ast.NodeVisitor):
+  """Class that extends the ast Node Visitor class, builds a CFG from an ast"""
   cfg: CFG
   cur_event: Event
   interrupting: bool
@@ -157,6 +160,31 @@ class CFGBuilder(ast.NodeVisitor):
     return Node(name=name, start=location, end=location)
 
 
+class CodetoCFG():
+  cfg: CFG
+
+  def build(self, code: CodeType) -> CFG:
+    self.cfg = CFG('test', 'root', 'root', {'root': Node('root')})
+    self._visit_code(dis.get_instructions(code))
+    return self.cfg
+
+  def _visit_block(self, block: Iterator[dis.Instruction]):
+    for instruction in block:
+      self.visit(instruction)
+
+
+  def generic_visit(self, inst: dis.Instruction):
+    self.cfg.get_cur().append_contents(inst)
+
+
+  def visit(self, inst: dis.Instruction):
+    getattr(self, f'visit_{inst.opname.lower()}', self.generic_visit)(inst)
+
+
+  def visit_pop_jump_if_false(self):
+    pass
+
+
 def builds(source: str) -> CFG:
   """Takes a python source string and returns the corresponding CFG"""
-  return CFGBuilder().build(ast.parse(source))
+  return ASTtoCFG().build(ast.parse(source))

@@ -2,6 +2,11 @@ import ast
 import sys
 import dis
 import pdb
+import builtins
+import inspect
+import time
+from types import BuiltinFunctionType
+import types
 from pycfg import build_cfg_from_json
 
 PROGRAM = """
@@ -14,6 +19,13 @@ x += 2
 
 SIMPLE_IF="""
 x = (4 + 5) - (10 / 2)
+"""
+
+SAMPLE_PROG="""
+def fib(n):
+  if n == 0 or n == 1:
+    return n
+  return fib(n - 1) + fib(n - 2)
 """
 
 EXAMPLE_NODE = """{
@@ -208,11 +220,36 @@ def fib(n):
   return fib(n - 1) + fib(n - 2)
 
 
-def main():
-  cfg = build_cfg_from_json(WALKING_CFG)
+def test_loop(n):
+  while n < 5:
+    if n == 4:
+      continue
+    n += 2
 
-  for node in cfg.walk():
-    print(node)
+
+test_loop_str = """
+def test_loop(n):
+  while n < 5:
+    if n == 4:
+      continue
+    n += 2
+"""
+
+
+def test_if_exp(n):
+  return n if n < 5 else n - 1
+
+
+def main():
+  for inst in dis.get_instructions(test_loop):
+    print(inst)
+
+
+
+
+def is_user_function(name: str) -> bool:
+  return name not in builtins.__dict__
+
 
 if __name__ == '__main__':
   main()
