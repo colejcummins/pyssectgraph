@@ -114,19 +114,7 @@ class CFGEncoder(json.JSONEncoder):
   def default(self, obj):
     if isinstance(obj, Node):
       return obj.__dict__
-
-    if isinstance(obj, ast.AST):
-      return self._ast_no_recurse(obj)
     return NodeEncoder.default(self, obj)
-
-
-  def _ast_no_recurse(self, node: ast.AST) -> str:
-    """Turns an AST node with nested nodes into a flattened node for string representation."""
-    if type(node) in [ast.While, ast.If, ast.IfExp]:
-      return ast.unparse(node.__class__(node.test, [], []))
-    if isinstance(node, ast.For):
-      return ast.unparse(ast.For(node.target, node.iter, [], []))
-    return ast.unparse(node)
 
 
 class CFGDecoder(json.JSONDecoder):

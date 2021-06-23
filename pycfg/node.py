@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Set, List, Dict, Any
 from json import dumps, JSONEncoder, JSONDecoder, loads
-from ast import AST
 from enum import Enum
 from dis import Instruction
+import ast
 
 class Event(Enum):
   """Enum used to describe CFG node transitions"""
@@ -27,12 +27,12 @@ class Location:
   column: int = 0
 
   @staticmethod
-  def default_start(node: AST):
+  def default_start(node: ast.AST):
     return Location(getattr(node, 'lineno', 1), getattr(node, 'col_offset', 0))
 
 
   @staticmethod
-  def default_end(node: AST):
+  def default_end(node: ast.AST):
     return Location(getattr(node, 'end_lineno', 1), getattr(node, 'end_col_offset', 0))
 
 
@@ -47,7 +47,7 @@ class Node:
   Nodes are json serializable and can be decoded from json, with the methods `to_json_str` and
   `build_node_from_json` respsectively.
   """
-  name: str = ''
+  name: str
   start: Location = field(default_factory=Location)
   end: Location = field(default_factory=Location)
   parents: Dict[str, Event] = field(default_factory=dict)
@@ -85,7 +85,7 @@ class Node:
   def append_contents(self, contents: Any) -> None:
     """Append a string to contents"""
     self.contents.append(contents)
-    if isinstance(contents, AST):
+    if isinstance(contents, ast.AST):
       self.end = Location.default_end(contents)
     elif isinstance(contents, Instruction):
       self.end = contents.starts_line or 0
@@ -117,7 +117,18 @@ class NodeEncoder(JSONEncoder):
       return list(obj)
     if isinstance(obj, Event):
       return obj.value
+    if isinstance(obj, ast.AST):
+      return self._ast_no_recurse(obj)
     return JSONEncoder.default(self, obj)
+
+
+  def _ast_no_recurse(self, node: ast.AST) -> str:
+    """Turns an AST node with nested nodes into a flattened node for string representation."""
+    if type(node) in [ast.While, ast.If, ast.IfExp]:
+      return ast.unparse(node.__class__(node.test, [], []))
+    if isinstance(node, ast.For):
+      return ast.unparse(ast.For(node.target, node.iter, [], []))
+    return ast.unparse(node)
 
 
 class NodeDecoder(JSONDecoder):
