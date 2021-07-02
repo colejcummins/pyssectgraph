@@ -1,13 +1,16 @@
+from dataclasses import dataclass
 from types import CodeType
 from .cfg import CFG
 from .node import Node, Location, Event
-from typing import Any, Iterator, List, Set
+from typing import Any, Iterator, List, Dict
+import pdb
 import dis
 import ast
 
 
 class ASTtoCFG(ast.NodeVisitor):
   """Class that extends the ast Node Visitor class, builds a CFG from an ast"""
+  cfg_dict: Dict[str, CFG]
   cfg: CFG
   cur_event: Event
   interrupting: bool
@@ -20,18 +23,21 @@ class ASTtoCFG(ast.NodeVisitor):
     super().__init__()
 
 
-  def build(self, node: ast.AST) -> CFG:
-    self.cfg = CFG('test', 'root', 'root', {'root': Node('root')})
+  def build(self, node: ast.AST) -> Dict[str, CFG]:
     self._init_instances()
+    cfg = CFG('__main__', nodes={'root': Node('root')})
+    self.cfg_dict['__main__'] = cfg
+    self.cfg = cfg
     if hasattr(node, 'body'):
       self._visit_block(node.body)
     else:
       self.visit(node)
-    return self.cfg
+    return self.cfg_dict
 
 
   def _init_instances(self):
     self.cur_event = Event.PASS
+    self.cfg_dict = {}
     self.interrupting = False
     self.loop_headers = []
     self.loop_exits = []
@@ -52,6 +58,21 @@ class ASTtoCFG(ast.NodeVisitor):
       self.cur_event = Event.PASS
     else:
       self.cfg.get_cur().append_contents(node)
+
+
+  def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
+    saved = self.cfg.name
+    cfg_node = self._build_node(node)
+    self.cfg.attach_child(cfg_node, self.cur_event)
+    self.cfg.go_to(cfg_node.name)
+
+    new_cfg = CFG(node.name, nodes={'root': Node()})
+    self.cfg_dict[node.name] = new_cfg
+    self.cfg = new_cfg
+    self._visit_block(node.body)
+
+    self.cfg = self.cfg_dict[saved]
+    self.interrupting = False
 
 
   def visit_While(self, node: ast.While) -> Any:
@@ -82,6 +103,7 @@ class ASTtoCFG(ast.NodeVisitor):
 
     self.loop_headers.pop()
     self.loop_exits.pop()
+    self.cur_event = Event.PASS
 
 
   def visit_If(self, node: ast.If) -> Any:
@@ -99,6 +121,7 @@ class ASTtoCFG(ast.NodeVisitor):
 
     self._add_exit(exit_node)
     self.cfg.go_to(exit_node.name)
+    self.cur_event = Event.PASS
 
 
   def visit_Return(self, node: ast.Return) -> Any:
@@ -110,7 +133,7 @@ class ASTtoCFG(ast.NodeVisitor):
 
 
   def visit_YieldFrom(self, node: ast.YieldFrom) -> Any:
-    # TODO
+    # TODO implement yieldfrom
     self._visit_interrupts(node)
 
 
@@ -120,14 +143,16 @@ class ASTtoCFG(ast.NodeVisitor):
 
 
   def visit_Break(self, node: ast.Break) -> Any:
-    self.cfg.attach_child(cfg_node := self._build_node(node))
+    cfg_node = self._build_node(node)
+    self.cfg.attach_child(cfg_node)
     self.cfg.go_to(cfg_node.name)
     self.cfg.attach_child(self.loop_exits[-1], Event.ONBREAK)
     self.interrupting = True
 
 
   def visit_Continue(self, node: ast.Continue) -> Any:
-    self.cfg.attach_child(cfg_node := self._build_node(node))
+    cfg_node = self._build_node(node)
+    self.cfg.attach_child(cfg_node)
     self.cfg.go_to(cfg_node.name)
     self.cfg.attach_child(self.loop_headers[-1], Event.ONCONTINUE)
     self.interrupting = True
@@ -160,6 +185,7 @@ class ASTtoCFG(ast.NodeVisitor):
     return Node(name=name, start=location, end=location)
 
 
+@dataclass
 class CodetoCFG():
   cfg: CFG
 
@@ -181,10 +207,13 @@ class CodetoCFG():
     getattr(self, f'visit_{inst.opname.lower()}', self.generic_visit)(inst)
 
 
-  def visit_pop_jump_if_false(self):
-    pass
-
-
-def builds(source: str) -> CFG:
+def builds(source: str) -> Dict[str, CFG]:
   """Takes a python source string and returns the corresponding CFG"""
   return ASTtoCFG().build(ast.parse(source))
+
+
+def clean_graph(cfg: CFG) -> CFG:
+  # TODO allow for inplace editing of CFG with a walk method
+  for node in cfg.walk():
+    if len(node.contents) == 0 and len(node.children) == 1 and len(cfg.nodes[node.children[0]].parents) == 1:
+      cfg.merge_nodes(node, cfg.nodes[node.children[0]])

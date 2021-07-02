@@ -7,7 +7,8 @@ import inspect
 import time
 from types import BuiltinFunctionType
 import types
-from pycfg import build_cfg_from_json
+from pycfg import builds, cfg_dumps
+import json
 
 PROGRAM = """
 x = 4
@@ -214,6 +215,20 @@ WALKING_CFG = """{
 }"""
 
 
+EXAMPLE_PROGRAM="""
+def fib(n):
+  if n == 0 or n == 1:
+    return n
+  return fib(n - 1) + fib(n - 2)
+
+def main():
+  print(fib(20))
+
+if __name__ == '__main__':
+  main()
+"""
+
+
 def fib(n):
   if n == 0 or n == 1:
     return n
@@ -239,11 +254,8 @@ def test_loop(n):
 def test_if_exp(n):
   return n if n < 5 else n - 1
 
-
 def main():
-  for inst in dis.get_instructions(test_loop):
-    print(inst)
-
+  print(cfg_dumps(builds(EXAMPLE_PROGRAM)))
 
 
 

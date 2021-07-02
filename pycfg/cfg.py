@@ -1,15 +1,13 @@
 from dataclasses import dataclass, field
-from typing import Dict, Set
-from .node import Node, NodeEncoder, Event, NodeDecoder
-import ast
-import json
+from typing import Dict
+from .node import Node, Event
+
 
 @dataclass
 class CFG:
   name: str
   root: str = 'root'
   cur: str = 'root'
-  visited: Set[str] = field(default_factory=set)
   nodes: Dict[str, Node] = field(default_factory=dict)
 
 
@@ -78,11 +76,6 @@ class CFG:
     return self.nodes[self.cur]
 
 
-  def to_json_str(self) -> str:
-    """Returns a json string representation of the cfg"""
-    return json.dumps(self.__dict__, cls=CFGEncoder, indent=2)
-
-
   def iter_child_nodes(self):
     """Iterates through all child nodes of the current node"""
     for name in self.nodes[self.cur].children.keys():
@@ -102,28 +95,3 @@ class CFG:
         visited.add(node.name)
         nodes.extend(self.iter_child_nodes())
         yield node
-
-
-def build_cfg_from_json(str) -> CFG:
-  """Takes in a JSON string and returns a corresponding Control Flow Graph"""
-  return json.loads(str, cls=CFGDecoder)
-
-
-class CFGEncoder(json.JSONEncoder):
-  """Custom JSON Encoder for the CFG Class"""
-  def default(self, obj):
-    if isinstance(obj, Node):
-      return obj.__dict__
-    return NodeEncoder.default(self, obj)
-
-
-class CFGDecoder(json.JSONDecoder):
-  """Custom JSON Decoder for the CFG Class"""
-  def __init__(self, *args, **kwargs):
-    json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
-
-
-  def object_hook(self, obj):
-    if 'name' in obj and 'cur' in obj and 'root' in obj:
-      return CFG(**obj)
-    return NodeDecoder.object_hook(self, obj)

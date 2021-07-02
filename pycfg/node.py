@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from typing import Set, List, Dict, Any
-from json import dumps, JSONEncoder, JSONDecoder, loads
+from typing import List, Dict, Any
 from enum import Enum
 from dis import Instruction
 import ast
+
 
 class Event(Enum):
   """Enum used to describe CFG node transitions"""
@@ -14,6 +14,7 @@ class Event(Enum):
   ONCONTINUE = "continue"
   ONYIELD = "yield"
   ONRETURN = "return"
+  ONEXCEPTION = "excepts"
   PASS = ""
 
 
@@ -47,7 +48,7 @@ class Node:
   Nodes are json serializable and can be decoded from json, with the methods `to_json_str` and
   `build_node_from_json` respsectively.
   """
-  name: str
+  name: str = 'root'
   start: Location = field(default_factory=Location)
   end: Location = field(default_factory=Location)
   parents: Dict[str, Event] = field(default_factory=dict)
@@ -96,50 +97,3 @@ class Node:
     child = self.children.pop()
     self.children.add(child)
     return child
-
-
-  def to_json_str(self) -> str:
-    """Returns a json representation of the current Node"""
-    return dumps(self.__dict__, cls=NodeEncoder, indent=2)
-
-
-
-def build_node_from_json(str) -> Node:
-  return loads(str, cls=NodeDecoder)
-
-
-class NodeEncoder(JSONEncoder):
-  """Custom JSON Encoder for the Node Class"""
-  def default(self, obj):
-    if isinstance(obj, Location):
-      return obj.__dict__
-    if isinstance(obj, Set):
-      return list(obj)
-    if isinstance(obj, Event):
-      return obj.value
-    if isinstance(obj, ast.AST):
-      return self._ast_no_recurse(obj)
-    return JSONEncoder.default(self, obj)
-
-
-  def _ast_no_recurse(self, node: ast.AST) -> str:
-    """Turns an AST node with nested nodes into a flattened node for string representation."""
-    if type(node) in [ast.While, ast.If, ast.IfExp]:
-      return ast.unparse(node.__class__(node.test, [], []))
-    if isinstance(node, ast.For):
-      return ast.unparse(ast.For(node.target, node.iter, [], []))
-    return ast.unparse(node)
-
-
-class NodeDecoder(JSONDecoder):
-  """Custom JSON Decoder for the Node Class"""
-  def __init__(self, *args, **kwargs):
-    JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
-
-
-  def object_hook(self, obj):
-    if 'line' in obj and 'column' in obj:
-      return Location(obj['line'], obj['column'])
-    if 'parents' in obj and 'children' in obj:
-      return Node(**obj)
-    return obj
