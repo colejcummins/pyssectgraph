@@ -39,14 +39,11 @@ class Location:
 
 @dataclass
 class Node:
-  """Represents a single Node in a Control Flow Graph, with a name, a `Location` start and end
-  a dictionary of parent and child nodes and a list of contents.
+  """Represents a single Node in a Control Flow Graph, with a name, a `Location` start and end,
+  a dictionary of parent and child nodes, and a list of contents.
 
-  Nodes follow a naming convention of `<AST class>_<start line>_<start column>`, for example
+  AST nodes follow a naming convention of `<AST class>_<start line>_<start column>`, for example
   `'If_5_2'`.
-
-  Nodes are json serializable and can be decoded from json, with the methods `to_json_str` and
-  `build_node_from_json` respsectively.
   """
   name: str = 'root'
   start: Location = field(default_factory=Location)
