@@ -3,7 +3,6 @@ from types import CodeType
 from .cfg import CFG
 from .node import Node, Location, Event
 from typing import Any, Iterator, List, Dict
-import pdb
 import dis
 import ast
 
@@ -23,7 +22,7 @@ class ASTtoCFG(ast.NodeVisitor):
     super().__init__()
 
 
-  def build(self, node: ast.AST) -> Dict[str, CFG]:
+  def build(self, node: ast.AST, do_clean: bool = False) -> Dict[str, CFG]:
     self._init_instances()
     cfg = CFG('__main__', nodes={'root': Node('root')})
     self.cfg_dict['__main__'] = cfg
@@ -32,7 +31,16 @@ class ASTtoCFG(ast.NodeVisitor):
       self._visit_block(node.body)
     else:
       self.visit(node)
+
+    if do_clean:
+      self.clean_graphs()
+
     return self.cfg_dict
+
+
+  def clean_graphs(self):
+    for name in self.cfg_dict.keys():
+      self.cfg_dict[name].clean_graph()
 
 
   def _init_instances(self):
@@ -60,6 +68,10 @@ class ASTtoCFG(ast.NodeVisitor):
       self.cfg.get_cur().append_contents(node)
 
 
+  def visit_ClassDef(self, node: ast.ClassDef) -> Any:
+    self._visit_block(node.body)
+
+
   def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
     saved = self.cfg.name
     cfg_node = self._build_node(node)
@@ -73,6 +85,14 @@ class ASTtoCFG(ast.NodeVisitor):
 
     self.cfg = self.cfg_dict[saved]
     self.interrupting = False
+
+
+  def visit_Import(self, node: ast.Import) -> Any:
+      pass
+
+
+  def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
+    pass
 
 
   def visit_While(self, node: ast.While) -> Any:
@@ -207,13 +227,7 @@ class CodetoCFG():
     getattr(self, f'visit_{inst.opname.lower()}', self.generic_visit)(inst)
 
 
-def builds(source: str) -> Dict[str, CFG]:
+def builds(source: str, do_clean: bool = False) -> Dict[str, CFG]:
   """Takes a python source string and returns the corresponding CFG"""
-  return ASTtoCFG().build(ast.parse(source))
+  return ASTtoCFG().build(ast.parse(source), do_clean)
 
-
-def clean_graph(cfg: CFG) -> CFG:
-  # TODO allow for inplace editing of CFG with a walk method
-  for node in cfg.walk():
-    if len(node.contents) == 0 and len(node.children) == 1 and len(cfg.nodes[node.children[0]].parents) == 1:
-      cfg.merge_nodes(node, cfg.nodes[node.children[0]])

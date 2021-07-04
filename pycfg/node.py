@@ -66,13 +66,13 @@ class Node:
   def remove_child(self, node_name: str) -> None:
     """Remove a node from the set of children"""
     if node_name in self.children:
-      self.children.remove(node_name)
+      del self.children[node_name]
 
 
   def remove_parent(self, node_name: str) -> None:
     """Remove a node from the set of parents"""
     if node_name in self.parents:
-      self.parents.remove(node_name)
+      del self.parents[node_name]
 
 
   def extend_contents(self, list: List[Any]) -> None:

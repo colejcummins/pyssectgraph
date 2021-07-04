@@ -7,6 +7,8 @@ import json
 
 class CFGEncoder(json.JSONEncoder):
   """Custom JSON Encoder for the Node Class"""
+
+  # TODO implement a simplified json for for the CFG Encoder
   def default(self, obj):
     if type(obj) in [Node, CFG, Location]:
       return obj.__dict__

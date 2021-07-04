@@ -7,7 +7,8 @@ import inspect
 import time
 from types import BuiltinFunctionType
 import types
-from pycfg import builds, cfg_dumps
+from typing import Dict
+from pycfg import builds, cfg_dumps, CFG
 import json
 
 PROGRAM = """
@@ -254,9 +255,19 @@ def test_loop(n):
 def test_if_exp(n):
   return n if n < 5 else n - 1
 
-def main():
-  print(cfg_dumps(builds(EXAMPLE_PROGRAM)))
+def build_from_file(file_name: str) -> Dict[str, CFG]:
+  d = {}
+  with open(file_name, 'r') as f:
+    prog = ''.join(f.readlines())
+    d = builds(prog)
+  return d
 
+
+def main():
+  cfg = builds(PROGRAM)
+  print(cfg_dumps(cfg))
+  cfg = builds(PROGRAM, True)
+  print(cfg_dumps(cfg))
 
 
 def is_user_function(name: str) -> bool:

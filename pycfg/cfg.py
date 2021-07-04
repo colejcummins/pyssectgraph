@@ -22,6 +22,10 @@ class CFG:
       self.cur = name
 
 
+  def go_to_root(self) -> None:
+    self.cur = self.root
+
+
   def attach_child(self, node: Node, event: Event = Event.PASS) -> None:
     """Add a child node to the current node"""
     self._conditional_add(node)
@@ -93,5 +97,38 @@ class CFG:
       if node.name not in visited:
         self.go_to(node.name)
         visited.add(node.name)
-        nodes.extend(self.iter_child_nodes())
         yield node
+        nodes.extend(self.iter_child_nodes())
+
+
+  def clean_graph(self) -> None:
+  # TODO allow for inplace editing of CFG with a walk method
+    for node in self.walk():
+      if self._can_clean(node):
+        self.merge_nodes(node.name, self.nodes[next(iter(node.children.keys()))].name)
+      if self._can_remove(node):
+        self.remove_node()
+
+
+  def remove_node(self) -> None:
+    """Removes the current node from the graph"""
+    for parent in self.nodes[self.cur].parents.keys():
+      del self.nodes[parent].children[self.cur]
+
+    del self.nodes[self.cur]
+    self.go_to_root()
+
+
+
+  def _can_clean(self, node: Node) -> bool:
+    return (
+        len(node.contents) == 0 and
+        len(node.children) == 1 and
+        len(self.nodes[next(iter(node.children.keys()))].parents) == 1
+      )
+
+  def _can_remove(self, node: Node) -> bool:
+    return (
+      len(node.contents) == 0 and
+      len(node.children) == 0
+    )
