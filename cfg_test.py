@@ -265,9 +265,15 @@ def build_from_file(file_name: str) -> Dict[str, CFG]:
 
 def main():
   cfg = builds(PROGRAM)
+  before, after = (0, 0)
   print(cfg_dumps(cfg))
+  before = len(next(iter(cfg.values())).nodes)
   cfg = builds(PROGRAM, True)
   print(cfg_dumps(cfg))
+  after = len(next(iter(cfg.values())).nodes)
+
+  print(f"{before=}")
+  print(f"{after=}")
 
 
 def is_user_function(name: str) -> bool:

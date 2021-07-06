@@ -62,18 +62,18 @@ class CFG:
       self.nodes[node.name] = node
 
 
-  def merge_nodes(self, parent: str, child: str) -> None:
+  def merge_nodes(self, parent: Node, child: Node) -> None:
     """Merges the two nodes parent and child, attaching all grandchild nodes to the new parent"""
-    self.nodes[parent].extend_contents(self.nodes[child].contents)
-    self.nodes[parent].end = self.nodes[child].end
+    parent.extend_contents(child.contents)
+    parent.end = child.end
 
-    for grandchild_node in self.nodes[child].children:
-      self.nodes[parent].add_child(grandchild_node)
-      self.nodes[grandchild_node].add_parent(parent)
-      self.nodes[grandchild_node].remove_parent(child)
+    for grandchild_node in child.children:
+      parent.add_child(grandchild_node)
+      self.nodes[grandchild_node].add_parent(parent.name)
+      self.nodes[grandchild_node].remove_parent(child.name)
 
-    self.nodes[parent].remove_child(child)
-    del self.nodes[child]
+    parent.remove_child(child)
+    del self.nodes[child.name]
 
 
   def get_cur(self) -> Node:
@@ -102,7 +102,8 @@ class CFG:
 
 
   def clean_graph(self) -> None:
-  # TODO allow for inplace editing of CFG with a walk method
+    # TODO allow for inplace editing of CFG with a walk method
+    self.go_to_root()
     for node in self.walk():
       if self._can_clean(node):
         self.merge_nodes(node.name, self.nodes[next(iter(node.children.keys()))].name)
@@ -119,13 +120,14 @@ class CFG:
     self.go_to_root()
 
 
-
   def _can_clean(self, node: Node) -> bool:
+    print(node)
     return (
         len(node.contents) == 0 and
         len(node.children) == 1 and
         len(self.nodes[next(iter(node.children.keys()))].parents) == 1
       )
+
 
   def _can_remove(self, node: Node) -> bool:
     return (
