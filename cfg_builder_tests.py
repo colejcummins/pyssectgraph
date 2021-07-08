@@ -1,4 +1,4 @@
-from pycfg.cfg_builder import builds
+from pycfg.builders import builds
 from typing import Dict, Any
 import json
 import ast

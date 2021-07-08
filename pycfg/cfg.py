@@ -88,7 +88,8 @@ class CFG:
 
   def walk(self):
     """Walks along a control flow graph starting with the current node, yielding all descendant nodes,
-    in breadth first order"""
+    in breadth first order. Extending the queue is done after the each node is yielded, allowing for
+    inplace editing of the graph as it is being traversed"""
     from collections import deque
     nodes = deque([self.nodes[self.cur]])
     visited = set()
@@ -102,35 +103,32 @@ class CFG:
 
 
   def clean_graph(self) -> None:
-    # TODO allow for inplace editing of CFG with a walk method
     self.go_to_root()
     for node in self.walk():
-      if self._can_clean(node):
-        self.merge_nodes(node.name, self.nodes[next(iter(node.children.keys()))].name)
       if self._can_remove(node):
-        self.remove_node()
+        self._remove_node()
 
 
-  def remove_node(self) -> None:
+  def _remove_node(self) -> None:
     """Removes the current node from the graph"""
-    for parent in self.nodes[self.cur].parents.keys():
+
+    for parent, p_event in self.nodes[self.cur].parents.items():
       del self.nodes[parent].children[self.cur]
+      for child, c_event in self.nodes[self.cur].children.items():
+        self.nodes[parent].add_child(child, p_event)
+        self.nodes[child].add_parent(parent, c_event)
+
+    for child in self.nodes[self.cur].children.keys():
+      del self.nodes[child].parents[self.cur]
 
     del self.nodes[self.cur]
     self.go_to_root()
 
 
-  def _can_clean(self, node: Node) -> bool:
-    print(node)
-    return (
-        len(node.contents) == 0 and
-        len(node.children) == 1 and
-        len(self.nodes[next(iter(node.children.keys()))].parents) == 1
-      )
-
-
   def _can_remove(self, node: Node) -> bool:
     return (
-      len(node.contents) == 0 and
-      len(node.children) == 0
-    )
+        len(node.contents) == 0 and
+        len(node.parents) <= 1 and
+        len(node.children) <= 1 and
+        node.name != 'root'
+      )

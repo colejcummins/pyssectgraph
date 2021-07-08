@@ -4,7 +4,8 @@ import dis
 import pdb
 import builtins
 import inspect
-import time
+import timeit
+import functools
 from types import BuiltinFunctionType
 import types
 from typing import Dict
@@ -255,25 +256,31 @@ def test_loop(n):
 def test_if_exp(n):
   return n if n < 5 else n - 1
 
-def build_from_file(file_name: str) -> Dict[str, CFG]:
+def build_from_file(file_name: str, clean) -> Dict[str, CFG]:
   d = {}
   with open(file_name, 'r') as f:
     prog = ''.join(f.readlines())
-    d = builds(prog)
+    d = builds(prog, clean)
   return d
 
 
+def sum_lengths(cfg) -> int:
+  return functools.reduce(lambda s, k_v: s + len(k_v[1].nodes), cfg.items(), 0)
+
+
 def main():
-  cfg = builds(PROGRAM)
+  cfg = build_from_file('./pycfg/builders.py', False)
   before, after = (0, 0)
-  print(cfg_dumps(cfg))
-  before = len(next(iter(cfg.values())).nodes)
-  cfg = builds(PROGRAM, True)
-  print(cfg_dumps(cfg))
-  after = len(next(iter(cfg.values())).nodes)
+  print(cfg_dumps(cfg, simple=True))
+
+  before = sum_lengths(cfg)
+  cfg = build_from_file('./pycfg/builders.py', True)
+  print(cfg_dumps(cfg, simple=True))
+  after = sum_lengths(cfg)
 
   print(f"{before=}")
   print(f"{after=}")
+
 
 
 def is_user_function(name: str) -> bool:

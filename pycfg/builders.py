@@ -39,8 +39,8 @@ class ASTtoCFG(ast.NodeVisitor):
 
 
   def clean_graphs(self):
-    for name in self.cfg_dict.keys():
-      self.cfg_dict[name].clean_graph()
+    for cfg in self.cfg_dict.values():
+      cfg.clean_graph()
 
 
   def _init_instances(self):

@@ -7,7 +7,8 @@ import json
 
 def cfg_loads(str: str):
   """Takes in a JSON string and returns a corresponding Control Flow Graph, Node, or Location"""
-  def object_hook(obj):
+
+  def _object_hook(obj):
     # TODO implement strict rules for json conversion, with errors
     if 'name' in obj and 'cur' in obj and 'root' in obj:
       return CFG(**obj)
@@ -16,7 +17,8 @@ def cfg_loads(str: str):
     if 'parents' in obj and 'children' in obj:
       return Node(**obj)
     return obj
-  return json.loads(str, object_hook=object_hook)
+
+  return json.loads(str, object_hook=_object_hook)
 
 
 def _ast_no_recurse(node: ast.AST) -> ast.AST:
@@ -31,14 +33,14 @@ def _ast_no_recurse(node: ast.AST) -> ast.AST:
 
 def cfg_dumps(obj, indent: int=2, simple: bool = False) -> str:
   """Returns a json string representation of the Control Flow Graph"""
-    # TODO implement a simplified json for for the CFG Encoder
-  def default(obj):
+
+  def _default(obj):
     if type(obj) in [Node, CFG, Location]:
       if simple and isinstance(obj, Node):
         return {
-          'contents': obj['contents'],
-          'children': obj['children'],
-          'parents': obj['parents']
+          'contents': obj.contents,
+          'children': obj.children,
+          'parents': obj.parents
         }
       return obj.__dict__
     if isinstance(obj, Set):
@@ -48,4 +50,5 @@ def cfg_dumps(obj, indent: int=2, simple: bool = False) -> str:
     if isinstance(obj, ast.AST):
       return ast.unparse(_ast_no_recurse(obj))
     return json.JSONEncoder.default(obj)
-  return json.dumps(obj, default=default, indent=indent)
+
+  return json.dumps(obj, default=_default, indent=indent)
