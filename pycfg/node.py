@@ -15,6 +15,8 @@ class Event(Enum):
   ONYIELD = "yield"
   ONRETURN = "return"
   ONEXCEPTION = "excepts"
+  ONFINALLY = "finally"
+  ONTRY = "try"
   PASS = ""
 
 

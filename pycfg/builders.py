@@ -13,8 +13,8 @@ class ASTtoCFG(ast.NodeVisitor):
   cfg: CFG
   cur_event: Event
   interrupting: bool
-  loop_headers: List[Node]
-  loop_exits: List[Node]
+  headers: List[Node]
+  exits: List[Node]
 
 
   def __init__(self):
@@ -47,8 +47,8 @@ class ASTtoCFG(ast.NodeVisitor):
     self.cur_event = Event.PASS
     self.cfg_dict = {}
     self.interrupting = False
-    self.loop_headers = []
-    self.loop_exits = []
+    self.headers = []
+    self.exits = []
 
 
   def _visit_block(self, nodes: List[ast.stmt | ast.expr]) -> None:
@@ -88,7 +88,7 @@ class ASTtoCFG(ast.NodeVisitor):
 
 
   def visit_Import(self, node: ast.Import) -> Any:
-      pass
+    pass
 
 
   def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
@@ -106,8 +106,8 @@ class ASTtoCFG(ast.NodeVisitor):
   def _visit_loop(self, node: ast.For | ast.While) -> Any:
     cfg_node = self._build_node(node)
     exit_node = self._build_empty_node(f"exit_{cfg_node.name}", Location.default_end(node))
-    self.loop_headers.append(cfg_node)
-    self.loop_exits.append(exit_node)
+    self.headers.append(cfg_node)
+    self.exits.append(exit_node)
     self.cfg.attach_child(cfg_node, self.cur_event)
     self.cfg.go_to(cfg_node.name)
 
@@ -121,8 +121,8 @@ class ASTtoCFG(ast.NodeVisitor):
     self._add_exit(exit_node)
     self.cfg.go_to(exit_node.name)
 
-    self.loop_headers.pop()
-    self.loop_exits.pop()
+    self.headers.pop()
+    self.exits.pop()
     self.cur_event = Event.PASS
 
 
@@ -142,6 +142,46 @@ class ASTtoCFG(ast.NodeVisitor):
     self._add_exit(exit_node)
     self.cfg.go_to(exit_node.name)
     self.cur_event = Event.PASS
+
+
+  def visit_Try(self, node: ast.Try) -> Any:
+    cfg_node = self._build_node(node)
+    try_block = None
+    exit_parents: List[Node] = []
+    exit_node = self._build_empty_node(f"exit_{cfg_node.name}", Location.default_end(node))
+    self.cfg.attach_child(cfg_node, self.cur_event)
+    self.cfg.go_to(cfg_node.name)
+
+    if node.body:
+      self.cur_event = Event.ONTRY
+      self._visit_block(node.body)
+      try_block = self.cfg.nodes[self.cfg.cur]
+
+    for handler in node.handlers:
+      self.visit(handler)
+      exit_parents.append(self.cfg.nodes[self.cfg.cur])
+      self.cfg.go_to(try_block.name if try_block else cfg_node.name)
+
+    if node.orelse:
+      self.cur_event = Event.ONFALSE
+      self._visit_block(node.orelse)
+      exit_parents.append(self.cfg.nodes[self.cfg.cur])
+
+    if node.finalbody:
+      self.cur_event = Event.ONFINALLY
+      self._visit_block(node.finalbody)
+      for exit in exit_parents:
+        self.cfg.attach_parent(exit, Event.ONFINALLY)
+
+    self.cfg.attach_child(exit_node)
+    self.cfg.go_to(exit_node.name)
+
+
+  def visit_ExceptHandler(self, node: ast.ExceptHandler) -> Any:
+    cfg_node = self._build_node(node)
+    self.cfg.attach_child(cfg_node, Event.ONEXCEPTION)
+    self._visit_block(node.body)
+    self.cfg.go_to(cfg_node.name)
 
 
   def visit_Return(self, node: ast.Return) -> Any:
@@ -166,7 +206,7 @@ class ASTtoCFG(ast.NodeVisitor):
     cfg_node = self._build_node(node)
     self.cfg.attach_child(cfg_node)
     self.cfg.go_to(cfg_node.name)
-    self.cfg.attach_child(self.loop_exits[-1], Event.ONBREAK)
+    self.cfg.attach_child(self.exits[-1], Event.ONBREAK)
     self.interrupting = True
 
 
@@ -174,7 +214,7 @@ class ASTtoCFG(ast.NodeVisitor):
     cfg_node = self._build_node(node)
     self.cfg.attach_child(cfg_node)
     self.cfg.go_to(cfg_node.name)
-    self.cfg.attach_child(self.loop_headers[-1], Event.ONCONTINUE)
+    self.cfg.attach_child(self.headers[-1], Event.ONCONTINUE)
     self.interrupting = True
 
 

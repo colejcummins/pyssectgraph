@@ -408,6 +408,29 @@ WHILE_BREAK_CONTINUE_JSON = {
 
 
 
+BASIC_TRY = """
+try:
+  x += 1
+except Exception as e:
+  print(x)
+"""
+
+
+TRY_WITH_FINALLY_ELSE = """
+try:
+  x += 1
+except ArithmeticError:
+  print("arithmetic")
+except Exception:
+  print("exception")
+else:
+  print("else")
+finally:
+  print("finally")
+"""
+
+
+
 
 if __name__ == '__main__':
   unittest.main()

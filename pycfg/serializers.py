@@ -24,11 +24,23 @@ def cfg_loads(str: str):
 def _ast_no_recurse(node: ast.AST) -> ast.AST:
   """Turns an AST node with nested nodes into a flattened node for string representation."""
   l = ast.Expr(value=ast.Ellipsis())
-  if hasattr(node, 'body'):
+  if hasattr(node, 'body') and not isinstance(node, ast.ExceptHandler):
     node.__setattr__('body', [l])
   if hasattr(node, 'orelse'):
     node.__setattr__('orelse', [l] if node.orelse else [])
+  if hasattr(node, 'finalbody'):
+    node.__setattr__('finalbody', [l] if node.finalbody else [])
   return node
+
+
+def _try_no_recurse(node: ast.Try) -> ast.AST:
+  l = ast.Expr(value=ast.Ellipsis())
+  return ast.Try(
+    [l],
+    [ast.ExceptHandler(name=handler.name, type=handler.type, body=[l]) for handler in node.handlers],
+    [l] if node.orelse else [],
+    [l] if node.finalbody else []
+  )
 
 
 def cfg_dumps(obj, indent: int=2, simple: bool = False) -> str:
@@ -48,6 +60,8 @@ def cfg_dumps(obj, indent: int=2, simple: bool = False) -> str:
     if isinstance(obj, Event):
       return obj.value
     if isinstance(obj, ast.AST):
+      if isinstance(obj, ast.Try):
+        return ast.unparse(_try_no_recurse(obj))
       return ast.unparse(_ast_no_recurse(obj))
     return json.JSONEncoder.default(obj)
 

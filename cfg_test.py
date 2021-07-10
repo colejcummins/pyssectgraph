@@ -252,8 +252,30 @@ def test_loop(n):
     n += 2
 """
 
+BASIC_TRY = """
+try:
+  x += 1
+except Exception as e:
+  print(x)
+"""
+
+
+TRY_WITH_FINALLY_ELSE = """
+try:
+  x += 1
+except ArithmeticError:
+  print("arithmetic")
+except Exception:
+  print("exception")
+else:
+  print("else")
+finally:
+  print("finally")
+"""
+
 
 def test_if_exp(n):
+  pdb.set_trace()
   return n if n < 5 else n - 1
 
 def build_from_file(file_name: str, clean) -> Dict[str, CFG]:
@@ -269,17 +291,8 @@ def sum_lengths(cfg) -> int:
 
 
 def main():
-  cfg = build_from_file('./pycfg/builders.py', False)
-  before, after = (0, 0)
-  print(cfg_dumps(cfg, simple=True))
-
-  before = sum_lengths(cfg)
-  cfg = build_from_file('./pycfg/builders.py', True)
-  print(cfg_dumps(cfg, simple=True))
-  after = sum_lengths(cfg)
-
-  print(f"{before=}")
-  print(f"{after=}")
+  print(inspect.getsource(sys._getframe()))
+  print(cfg_dumps(builds(TRY_WITH_FINALLY_ELSE, True), simple=True))
 
 
 
