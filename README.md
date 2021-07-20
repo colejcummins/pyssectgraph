@@ -1,4 +1,5 @@
 # pyssectgraph
+### Cole Cummins
 
 ## TODOS
 * Implement Context managers
