@@ -271,3 +271,8 @@ def builds(source: str, do_clean: bool = False) -> Dict[str, CFG]:
   """Takes a python source string and returns the corresponding CFG"""
   return ASTtoCFG().build(ast.parse(source), do_clean)
 
+
+def builds_file(file: str, do_clean: bool = False) -> Dict[str, CFG]:
+  """Takes a python file and returns the corresponding CFG"""
+  with open(file, 'r') as f:
+    return ASTtoCFG().build(ast.parse(f.read()), do_clean)

@@ -1,5 +1,6 @@
-from pycfg.node import Node
+from pycfg import Node
 from pycfg.cfg import CFG
+from pycfg.serializers import cfg_dumps
 import unittest
 
 
@@ -50,14 +51,14 @@ class CFGTest(unittest.TestCase):
 
   def test_attach_child(self):
     node_a = Node(name='a')
-    cfg = CFG('a', 'a', {'a': node_a})
+    cfg = CFG(root='a', cur='a', nodes={'a': node_a})
     node_b = Node(name='b')
     cfg.attach_child(node_b)
 
     self.assertEqual(len(cfg.nodes), 2)
-    self.assertEqual(CFG('a', 'a', {
-      'a': Node(name='a', children={'b'}),
-      'b': Node(name='b', parents={'a'})
+    self.assertEqual(CFG(root='a', cur='a', nodes={
+      'a': Node(name='a', children={'b': ''}),
+      'b': Node(name='b', parents={'a': ''})
     }), cfg)
 
 
@@ -74,39 +75,39 @@ class CFGTest(unittest.TestCase):
 
     self.assertEqual(len(cfg.nodes), 4)
     self.assertEqual(CFG('a', 'a', {
-      'a': Node(name='a', children={'b'}),
-      'b': Node(name='b', parents={'a'}, children={'c', 'd'}),
-      'c': Node(name='c', parents={'b'}),
-      'd': Node(name='d', parents={'b'})
+      'a': Node(name='a', children={'b': ''}),
+      'b': Node(name='b', parents={'a': ''}, children={'c': '', 'd': ''}),
+      'c': Node(name='c', parents={'b': ''}),
+      'd': Node(name='d', parents={'b': ''})
     }), cfg)
 
 
   def test_merge_nodes(self):
     cfg = CFG('a', 'a', {
-      'a': Node(name='a', children={'b'}, contents=['hello']),
-      'b': Node(name='b', parents={'a'}, children={'c', 'd'}, contents=['world']),
-      'c': Node(name='c', parents={'b'}),
-      'd': Node(name='d', parents={'b'})
+      'a': Node(name='a', children={'b': ''}, contents=['hello']),
+      'b': Node(name='b', parents={'a': ''}, children={'c': '', 'd': ''}, contents=['world']),
+      'c': Node(name='c', parents={'b': ''}),
+      'd': Node(name='d', parents={'b': ''})
     })
 
     cfg.merge_nodes('a', 'b')
 
     self.assertEqual(len(cfg.nodes), 3)
     self.assertEqual(CFG('a', 'a', {
-      'a': Node(name='a', children={'c', 'd'}, contents=['hello', 'world']),
-      'c': Node(name='c', parents={'a'}),
-      'd': Node(name='d', parents={'a'})
+      'a': Node(name='a', children={'c': '', 'd': ''}, contents=['hello', 'world']),
+      'c': Node(name='c', parents={'a': ''}),
+      'd': Node(name='d', parents={'a': ''})
     }), cfg)
 
 
   def test_to_json_str(self):
     cfg = CFG('test', 'a', 'a', {
-        'a': Node(name='a', children={'b'}),
-        'b': Node(name='b', parents={'a'})
+        'a': Node(name='a', children={'b': ''}),
+        'b': Node(name='b', parents={'a': ''})
       })
 
     self.assertEqual(len(cfg.nodes), 2)
-    self.assertEqual(JSON_CFG_OUT, cfg.to_json_str())
+    self.assertEqual(JSON_CFG_OUT, cfg_dumps(cfg))
 
 
 if __name__ == '__main__':

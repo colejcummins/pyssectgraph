@@ -26,7 +26,7 @@ class Location:
   As described by the python AST class, `line` is one indexed whereas `column` is
   zero indexed
   """
-  line: int = 0
+  line: int = 1
   column: int = 0
 
   @staticmethod

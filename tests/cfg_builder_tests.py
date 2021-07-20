@@ -1,4 +1,5 @@
 from pycfg.builders import builds
+from pycfg.serializers import cfg_dumps
 from typing import Dict, Any
 import json
 import ast
@@ -12,42 +13,31 @@ class CFGBuilderTests(unittest.TestCase):
 
 
   def test_small(self):
-    self.assertEqual(SMALL_JSON, self._simplify_json(self._prog_to_json(SMALL)))
+    self.assertEqual(SMALL_JSON, self._prog_to_json(SMALL))
 
 
   def test_basic_if(self):
-    self.assertEqual(BASIC_IF_JSON, self._simplify_json(self._prog_to_json(BASIC_IF)))
+    self.assertEqual(BASIC_IF_JSON, self._prog_to_json(BASIC_IF))
 
 
   def test_basic_return(self):
-    self.assertEqual(BASIC_RETURN_JSON, self._simplify_json(self._prog_to_json(BASIC_RETURN)))
+    self.assertEqual(BASIC_RETURN_JSON, self._prog_to_json(BASIC_RETURN))
 
 
   def test_if_and_return(self):
-    self.assertEqual(IF_AND_RETURN_JSON, self._simplify_json(self._prog_to_json(IF_AND_RETURN)))
+    self.assertEqual(IF_AND_RETURN_JSON, self._prog_to_json(IF_AND_RETURN))
 
 
   def test_basic_while(self):
-    self.assertEqual(BASIC_WHILE_JSON, self._simplify_json(self._prog_to_json(BASIC_WHILE)))
+    self.assertEqual(BASIC_WHILE_JSON, self._prog_to_json(BASIC_WHILE))
 
 
   def test_while_break_continue(self):
-    self.assertEqual(WHILE_BREAK_CONTINUE_JSON, self._simplify_json(self._prog_to_json(WHILE_BREAK_CONTINUE)))
+    self.assertEqual(WHILE_BREAK_CONTINUE_JSON, self._prog_to_json(WHILE_BREAK_CONTINUE))
 
 
   def _prog_to_json(self, prog: str) -> Dict[str, Any]:
-    return json.loads(builds(prog).to_json_str())
-
-
-  def _simplify_json(self, json_inp):
-    return {
-      k: {
-        "contents": v["contents"],
-        "children": v["children"],
-        "parents": v["parents"]
-      } for k, v in json_inp['nodes'].items()
-    }
-
+    return json.loads(cfg_dumps(builds(prog), simple=True))['__main__']['nodes']
 
 
 SMALL = "x = 1"
@@ -81,7 +71,7 @@ BASIC_IF_JSON = {
   },
   "If_3_0": {
     "contents": [
-      "if x < 4:"
+      "if x < 4:\n    ..."
     ],
     "children": {
       "AugAssign_4_2": "True",
@@ -161,7 +151,7 @@ IF_AND_RETURN_JSON = {
   },
   "If_2_0": {
     "contents": [
-      "if x > 3:"
+      "if x > 3:\n    ..."
     ],
     "children": {
       "If_3_2": "True",
@@ -173,7 +163,7 @@ IF_AND_RETURN_JSON = {
   },
   "If_3_2": {
     "contents": [
-      "if x < 2:"
+      "if x < 2:\n    ..."
     ],
     "children": {
       "Return_4_4": "",
@@ -250,7 +240,7 @@ BASIC_WHILE_JSON = {
   },
   "While_3_0": {
     "contents": [
-      "while x < 5:"
+      "while x < 5:\n    ..."
     ],
     "children": {
       "AugAssign_4_2": "True",
@@ -305,7 +295,7 @@ WHILE_BREAK_CONTINUE_JSON = {
   },
   "While_2_0": {
     "contents": [
-      "while x < 10:"
+      "while x < 10:\n    ..."
     ],
     "children": {
       "If_3_2": "True",
@@ -319,14 +309,14 @@ WHILE_BREAK_CONTINUE_JSON = {
   },
   "If_3_2": {
     "contents": [
-      "if x == 5:"
+      "if x == 5:\n    ..."
     ],
     "children": {
       "Continue_4_4": "",
       "exit_If_3_2": ""
     },
     "parents": {
-      "While_2_0": "True"
+      "While_2_0": ""
     }
   },
   "Continue_4_4": {
@@ -343,7 +333,7 @@ WHILE_BREAK_CONTINUE_JSON = {
   "exit_If_3_2": {
     "contents": [],
     "children": {
-      "If_5_2": "True"
+      "If_5_2": ""
     },
     "parents": {
       "If_3_2": ""
@@ -351,14 +341,14 @@ WHILE_BREAK_CONTINUE_JSON = {
   },
   "If_5_2": {
     "contents": [
-      "if x == 1:"
+      "if x == 1:\n    ..."
     ],
     "children": {
       "AugAssign_6_4": "True",
       "exit_If_5_2": ""
     },
     "parents": {
-      "exit_If_3_2": "True"
+      "exit_If_3_2": ""
     }
   },
   "AugAssign_6_4": {
