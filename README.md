@@ -1,4 +1,4 @@
-# pyssect-graph
+# pyssectgraph
 
 ## TODOS
 * Implement Context managers
