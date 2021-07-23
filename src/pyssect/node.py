@@ -5,11 +5,11 @@ from dis import Instruction
 import ast
 
 
-class Event(Enum):
-  """Enum used to describe CFG node transitions"""
+class ControlEvent(Enum):
+  """Enum used to describe control flow events"""
   ONFALSE = "False"
   ONTRUE = "True"
-  ONCALL = "calls"
+  ONCALL = "call"
   ONBREAK = "break"
   ONCONTINUE = "continue"
   ONYIELD = "yield"
@@ -40,7 +40,7 @@ class Location:
 
 
 @dataclass
-class Node:
+class PyssectNode:
   """Represents a single Node in a Control Flow Graph, with a name, a `Location` start and end,
   a dictionary of parent and child nodes, and a list of contents.
 
@@ -48,19 +48,20 @@ class Node:
   `'If_5_2'`.
   """
   name: str = 'root'
+  type: str = ''
   start: Location = field(default_factory=Location)
   end: Location = field(default_factory=Location)
-  parents: Dict[str, Event] = field(default_factory=dict)
-  children: Dict[str, Event] = field(default_factory=dict)
+  parents: Dict[str, ControlEvent] = field(default_factory=dict)
+  children: Dict[str, ControlEvent] = field(default_factory=dict)
   contents: List[Any] = field(default_factory=list)
 
 
-  def add_parent(self, node_name: str, event: Event) -> None:
+  def add_parent(self, node_name: str, event: ControlEvent) -> None:
     """Add a node to the set of parents"""
     self.parents[node_name] = event
 
 
-  def add_child(self, node_name: str, event: Event) -> None:
+  def add_child(self, node_name: str, event: ControlEvent) -> None:
     """Add a node to the set of children"""
     self.children[node_name] = event
 
@@ -83,9 +84,11 @@ class Node:
 
 
   def append_contents(self, contents: Any) -> None:
-    """Append a string to contents"""
+    """Append anything to contents"""
     self.contents.append(contents)
     if isinstance(contents, ast.AST):
+      if len(self.contents) == 1:
+        self.type = type(contents).__name__
       self.end = Location.default_end(contents)
     elif isinstance(contents, Instruction):
       self.end = contents.starts_line or 0

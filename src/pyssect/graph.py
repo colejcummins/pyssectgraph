@@ -1,14 +1,14 @@
 from dataclasses import dataclass, field
 from typing import Dict
-from .node import Node, Event
+from .node import PyssectNode, ControlEvent
 
 
 @dataclass
-class CFG:
+class PyssectGraph:
   name: str
   root: str = 'root'
   cur: str = 'root'
-  nodes: Dict[str, Node] = field(default_factory=dict)
+  nodes: Dict[str, PyssectNode] = field(default_factory=dict)
 
 
   def next(self) -> None:
@@ -26,21 +26,21 @@ class CFG:
     self.cur = self.root
 
 
-  def attach_child(self, node: Node, event: Event = Event.PASS) -> None:
+  def attach_child(self, node: PyssectNode, event: ControlEvent = ControlEvent.PASS) -> None:
     """Add a child node to the current node"""
     self._conditional_add(node)
     self.nodes[self.cur].add_child(node.name, event)
     self.nodes[node.name].add_parent(self.cur, event)
 
 
-  def attach_parent(self, node: Node, event: Event = Event.PASS) -> None:
+  def attach_parent(self, node: PyssectNode, event: ControlEvent = ControlEvent.PASS) -> None:
     """Add a parent node to the current node"""
     self._conditional_add(node)
     self.nodes[self.cur].add_parent(node.name, event)
     self.nodes[node.name].add_child(self.cur, event)
 
 
-  def insert_child(self, node: Node, event: Event = Event.PASS) -> None:
+  def insert_child(self, node: PyssectNode, event: ControlEvent = ControlEvent.PASS) -> None:
     """Inserts a child node to the current node, replacing node connections from the children to the new parent"""
     self._conditional_add(node)
     self.attach_child(node)
@@ -54,15 +54,15 @@ class CFG:
         self.nodes[child_name].remove_parent(self.cur)
 
     self.nodes[self.cur].children.clear()
-    self.nodes[self.cur].add_child(node.name, Event.PASS)
+    self.nodes[self.cur].add_child(node.name, ControlEvent.PASS)
 
 
-  def _conditional_add(self, node: Node) -> None:
+  def _conditional_add(self, node: PyssectNode) -> None:
     if node.name not in self.nodes:
       self.nodes[node.name] = node
 
 
-  def merge_nodes(self, parent: Node, child: Node) -> None:
+  def merge_nodes(self, parent: PyssectNode, child: PyssectNode) -> None:
     """Merges the two nodes parent and child, attaching all grandchild nodes to the new parent"""
     parent.extend_contents(child.contents)
     parent.end = child.end
@@ -76,7 +76,7 @@ class CFG:
     del self.nodes[child.name]
 
 
-  def get_cur(self) -> Node:
+  def get_cur(self) -> PyssectNode:
     return self.nodes[self.cur]
 
 
@@ -125,7 +125,7 @@ class CFG:
     self.go_to_root()
 
 
-  def _can_remove(self, node: Node) -> bool:
+  def _can_remove(self, node: PyssectNode) -> bool:
     return (
         len(node.contents) == 0 and
         len(node.parents) <= 1 and

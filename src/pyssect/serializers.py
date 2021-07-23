@@ -1,21 +1,21 @@
-from .node import Node, Event, Location
-from .cfg import CFG
+from .node import PyssectNode, ControlEvent, Location
+from .graph import PyssectGraph
 from typing import Set, Dict
 import ast
 import json
 
 
-def cfg_loads(str: str):
+def pyssect_loads(str: str):
   """Takes in a JSON string and returns a corresponding Control Flow Graph, Node, or Location"""
 
   def _object_hook(obj):
     # TODO implement strict rules for json conversion, with errors
     if 'name' in obj and 'cur' in obj and 'root' in obj:
-      return CFG(**obj)
+      return PyssectGraph(**obj)
     if 'line' in obj and 'column' in obj:
       return Location(obj['line'], obj['column'])
     if 'parents' in obj and 'children' in obj:
-      return Node(**obj)
+      return PyssectNode(**obj)
     return obj
 
   return json.loads(str, object_hook=_object_hook)
@@ -43,12 +43,12 @@ def _try_no_recurse(node: ast.Try) -> ast.AST:
   )
 
 
-def cfg_dumps(obj, indent: int=2, simple: bool = False) -> str:
+def pyssect_dumps(obj, indent: int=2, simple: bool = False) -> str:
   """Returns a json string representation of the Control Flow Graph"""
 
   def _default(obj):
-    if type(obj) in [Node, CFG, Location]:
-      if simple and isinstance(obj, Node):
+    if type(obj) in [PyssectNode, PyssectGraph, Location]:
+      if simple and isinstance(obj, PyssectNode):
         return {
           'contents': obj.contents,
           'children': obj.children,
@@ -57,7 +57,7 @@ def cfg_dumps(obj, indent: int=2, simple: bool = False) -> str:
       return obj.__dict__
     if isinstance(obj, Set):
       return list(obj)
-    if isinstance(obj, Event):
+    if isinstance(obj, ControlEvent):
       return obj.value
     if isinstance(obj, ast.AST):
       if isinstance(obj, ast.Try):
