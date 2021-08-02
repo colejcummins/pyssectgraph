@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Type
 from enum import Enum
 from dis import Instruction
 import ast
@@ -18,6 +18,25 @@ class ControlEvent(Enum):
   ONFINALLY = "finally"
   ONTRY = "try"
   PASS = ""
+
+
+class MarshalledASTType(Enum):
+  """Enum used to transmit python AST types to Pyssect frontend"""
+  If = "If"
+  While = "While"
+  For = "For"
+  Try = "Try"
+  Return = "Return"
+  Default = "Default"
+
+
+def ast_to_marshalled_ast(type: Type) -> MarshalledASTType:
+  if type in {ast.If, ast.IfExp}:
+    return MarshalledASTType.If
+  if type in {ast.For, ast.comprehension}:
+    return MarshalledASTType.For
+  if type in {ast.Return, ast.Yield, ast.YieldFrom}:
+    return MarshalledASTType.Return
 
 
 @dataclass
@@ -99,3 +118,4 @@ class PyssectNode:
     child = self.children.pop()
     self.children.add(child)
     return child
+

@@ -10,7 +10,7 @@ import ast
 
 class ASTtoCFG(ast.NodeVisitor):
   """Class that extends the ast Node Visitor class, builds a PyssectGraph from an ast"""
-  cfg_dict: Dict[str,PyssectGraph]
+  cfg_dict: Dict[str, PyssectGraph]
   cfg: PyssectGraph
   cur_event: ControlEvent
   interrupting: bool
